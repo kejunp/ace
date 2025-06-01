@@ -134,7 +134,7 @@ void EditorBuffer::substitute_all(const std::string& pattern, const std::string&
                 start = next;
             }
             Node* prev = p->prev;
-            for (char rc : replacement) {
+	for (char rc : replacement) {
                 Node* n = alloc_node(rc);
                 n->prev = prev;
                 n->next = prev->next;

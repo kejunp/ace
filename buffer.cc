@@ -170,7 +170,7 @@ EditorBuffer::Node* EditorBuffer::get_head() const {
 }
 
 
-void EditorBuffer::delete_before() {
+void EditorBuffer::backspace_char() {
     if (cursor != list_) {
         Node* to_delete = cursor;
         cursor = cursor->prev;

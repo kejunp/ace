@@ -22,7 +22,7 @@ public:
 
     void insert(char ch);
     void delete_char();
-    void delete_before();
+    void backspace_char();
     void move_left();
     void move_right();
     void move_start();

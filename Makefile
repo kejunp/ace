@@ -1,8 +1,8 @@
 CXX := g++
-CXXFLAGS := -Wall -Wextra -std=c++23 -g
+CXXFLAGS := -Wall -Wextra -Wpedantic -Werror -std=c++23 -g
 LDFLAGS :=
 
-SRC := repl.cc buffer.cc
+SRC := repl.cc buffer.cc command.cc
 OBJ := $(SRC:.cc=.o)
 TARGET := ace
 

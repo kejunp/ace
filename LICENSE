@@ -672,3 +672,9 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+Ace Text Editor is licensed under the GNU General Public License v3.0, with the following additional permission:
+
+As a special exception, you may use this software to compile or link with any program, regardless of its license, and you may distribute the resulting executable under the license of your choice, provided you do not modify the Ace Text Editor itself.
+
+This exception does not apply to any modifications to Ace Text Editor. If you modify this software, you may only distribute the modified version under the terms of the GNU GPL v3.0 or later.

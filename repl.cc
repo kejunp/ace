@@ -60,10 +60,6 @@ void render_buffer(EditorBuffer &buf, int term_rows, int term_cols) {
         move_cursor(row, col);
         std::cout << (p->data == '\n' ? ' ' : p->data);
 
-        // Save the current screen coordinates
-        int prev_row = row;
-        int prev_col = col;
-
         // Advance cursor position
         if (p->data == '\n') {
             row++;

@@ -30,6 +30,7 @@ public:
     void move_up();
     void move_down();
     void substitute_all(const std::string& pattern, const std::string& replacement);
+    std::string get_string() const;
 
     Node* get_cursor() const;
     Node* get_head() const;

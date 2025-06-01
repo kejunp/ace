@@ -149,6 +149,18 @@ void EditorBuffer::substitute_all(const std::string& pattern, const std::string&
     }
 }
 
+std::string EditorBuffer::get_string() const {
+    std::string result;
+    result.reserve(CHUNK_CAPACITY_);
+    Node* sentinel = list_;
+    for (Node* p = sentinel->next; p != sentinel; p = p->next) {
+        if (p->used) {
+            result.push_back(p->data);
+        }
+    }
+    return result;
+}
+
 EditorBuffer::Node* EditorBuffer::get_cursor() const {
     return cursor;
 }

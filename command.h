@@ -15,4 +15,6 @@ CommandResult command_q(EditorBuffer& buf);
 
 CommandResult command_w(EditorBuffer& buf, const std::string& path = "ace.out");
 
+CommandResult command_wq(EditorBuffer& buf, const std::string& path = "ace.out");
+
 CommandResult run_command(EditorBuffer& buf, const std::string& input);

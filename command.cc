@@ -6,12 +6,12 @@
 #include <iostream>
 #include <sstream>
 
-CommandResult command_q(EditorBuffer&) {
+CommandResult command_q() {
     return CommandResult::QUIT;
 }
 
-CommandResult command_w(EditorBuffer& buf, const std::string& arg) {
-    std::string filename = arg.empty() ? "ace.out" : arg;
+CommandResult command_w(EditorBuffer& buf, const std::string& path) {
+    std::string filename = path.empty() ? "ace.out" : path;
     std::ofstream file(filename);
     if (!file) {
         std::cerr << "Error: Failed to open file '" << filename << "' for writing.\n";
@@ -21,15 +21,20 @@ CommandResult command_w(EditorBuffer& buf, const std::string& arg) {
     return CommandResult::CONTINUE;
 }
 
+CommandResult command_wq(EditorBuffer& buf, const std::string& path) {
+    command_w(buf, path);
+    return CommandResult::QUIT;
+}
+
 /** TODO: 
  * add more commands
- * e.g. :wq, :substitute, etc.
  */
 
 CommandResult run_command(EditorBuffer& buffer, const std::string& input) {
     static const std::unordered_map<std::string, std::function<CommandResult(EditorBuffer&, const std::string&)>> dispatch = {
-        {"q", [](EditorBuffer& buf, const std::string&) { return command_q(buf); }},
-        {"w", command_w}
+        {"q", [](EditorBuffer&, const std::string&) { return command_q(); }},
+        {"w", command_w},
+        {"wq", command_wq}
     };
 
     std::istringstream iss(input);

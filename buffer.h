@@ -14,7 +14,6 @@ public:
     };
 
     static const size_t CHUNK_CAPACITY_ = 1026 * 8;
-    static const size_t MAX_CHUNK_INDEX_ = 1026;
 
     EditorBuffer();
     EditorBuffer(const char* src);

@@ -26,6 +26,11 @@ CommandResult command_wq(EditorBuffer& buf, const std::string& path) {
     return CommandResult::QUIT;
 }
 
+CommandResult command_substitute(EditorBuffer& buf, const std::string& pattern, const std::string& replacement) {
+    buf.substitute_all(pattern, replacement);
+    return CommandResult::CONTINUE;
+}
+
 /** TODO: 
  * add more commands
  */
@@ -34,7 +39,15 @@ CommandResult run_command(EditorBuffer& buffer, const std::string& input) {
     static const std::unordered_map<std::string, std::function<CommandResult(EditorBuffer&, const std::string&)>> dispatch = {
         {"q", [](EditorBuffer&, const std::string&) { return command_q(); }},
         {"w", command_w},
-        {"wq", command_wq}
+        {"wq", command_wq},
+        {"substitute", [](EditorBuffer& buf, const std::string& patterns) {
+            std::istringstream iss(patterns);
+            std::string pattern;
+            iss >> pattern;
+            std::string replacement;
+            std::getline(iss, replacement);
+            return command_substitute(buf, pattern, replacement);
+        }}
     };
 
     std::istringstream iss(input);

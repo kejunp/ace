@@ -26,7 +26,7 @@ void enable_raw_mode() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-int get_window_size(int &rows, int &cols) {
+int get_window_size(int& rows, int& cols) {
     winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) return -1;
     rows = ws.ws_row;
@@ -181,6 +181,12 @@ int main(int argc, char** argv) {
                         break;
                     case 'l':
                         buffer.move_right();
+                        break;
+                    case 's':
+                        buffer.move_start();
+                        break;
+                    case 'e':
+                        buffer.move_end();
                         break;
                     case 'j':
                         buffer.move_down();

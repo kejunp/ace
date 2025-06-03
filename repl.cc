@@ -1,5 +1,7 @@
 #include <iostream>
 #include <unistd.h>
+#include "ui/term.h"
+#include "render.h"
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <csignal>
@@ -8,118 +10,31 @@
 #include "command.h"
 #include <vector>
 #include <string>
+#include <sstream>
+#include <fstream>
 
-termios orig_termios;
-
-void disable_raw_mode() {
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-}
-
-void enable_raw_mode() {
-    tcgetattr(STDIN_FILENO, &orig_termios);
-    atexit(disable_raw_mode);
-
-    termios raw = orig_termios;
-    raw.c_lflag &= ~(ECHO | ICANON | ISIG);
-    raw.c_iflag &= ~(IXON | ICRNL);
-    raw.c_oflag &= ~(OPOST);
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-}
-
-int get_window_size(int& rows, int& cols) {
-    winsize ws;
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) return -1;
-    rows = ws.ws_row;
-    cols = ws.ws_col;
-    return 0;
-}
-
-void clear_screen() {
-    std::cout << "\x1b[2J\x1b[H";
-}
-
-void move_cursor(int row, int col) {
-    std::cout << "\x1b[" << row << ";" << col << "H";
-}
-
-enum class EditorMode { Normal, Insert, Command };
-EditorMode mode = EditorMode::Normal;
+EditorMode mode = EditorMode::NORMAL;
 std::string command_buffer;
 std::vector<std::string> command_history;
 int history_index = 0;
 
-void render_buffer(EditorBuffer &buf, int term_rows, int term_cols) {
-    clear_screen();
-
-    int row = 1, col = 1;
-    int cursor_row = 1, cursor_col = 1;
-
-    EditorBuffer::Node* sentinel = buf.get_head();
-    EditorBuffer::Node* cursor = buf.get_cursor();
-    EditorBuffer::Node* p = sentinel->next;
-
-    while (p != sentinel && row <= term_rows - 1) {
-        move_cursor(row, col);
-
-        // Print character (don't skip newlines — print visibly or as space)
-        char to_print = (p->data == '\n' ? ' ' : p->data);
-        std::cout << to_print;
-
-        // Save position of cursor
-        if (p == cursor) {
-            cursor_row = row;
-            cursor_col = col + 1;  // place cursor after the character
-            if (cursor_col > term_cols) {
-                cursor_col = 1;
-                cursor_row += 1;
-            }
-        }
-
-        // Advance screen position
-        if (p->data == '\n') {
-            row++;
-            col = 1;
-        } else {
-            col++;
-            if (col > term_cols) {
-                row++;
-                col = 1;
-            }
-        }
-
-        p = p->next;
-    }
-
-    // Special case: cursor is at end (after last node)
-    if (cursor == sentinel) {
-        cursor_row = row;
-        cursor_col = col;
-    }
-
-    // Status bar
-    move_cursor(term_rows, 1);
-    if (mode == EditorMode::Command) {
-        std::cout << ":" << command_buffer << " ";
-    } else {
-        std::cout << "\x1b[44m-- ACE (" << (mode == EditorMode::Insert ? "INSERT" : "NORMAL") << ") --\x1b[0m";
-    }
-
-    // Move real terminal cursor to logical buffer position
-    move_cursor(cursor_row, cursor_col);
-
-    std::cout.flush();
-}
 
 int main(int argc, char** argv) {
-    /**
-     * TODO:
-     * add ./ace filename later
-     */
-    (void) argc;
-    (void) argv;
     enable_raw_mode();
 
-    EditorBuffer buffer;
+    std::string initial_contents;
+    if (argc >= 2) {
+        std::ifstream in(argv[1]);
+        if (!in) {
+            std::cerr << "Warning: Could not open '" << argv[1] << "'\n";
+        } else {
+            std::ostringstream ss;
+            ss << in.rdbuf();
+            initial_contents = ss.str();
+        }
+    }
+
+    EditorBuffer buffer(initial_contents.c_str());
     int rows, cols;
     get_window_size(rows, cols);
 
@@ -129,11 +44,11 @@ int main(int argc, char** argv) {
         char c;
         if (read(STDIN_FILENO, &c, 1) != 1) break;
 
-        if (mode == EditorMode::Command) {
+        if (mode == EditorMode::COMMAND) {
             if (c == '\r') {
                 CommandResult result = run_command(buffer, command_buffer);
                 if (result == CommandResult::QUIT) break;
-                mode = EditorMode::Normal;
+                mode = EditorMode::NORMAL;
                 command_history.push_back(command_buffer);
                 history_index = command_history.size();
                 command_buffer.clear();
@@ -156,9 +71,9 @@ int main(int argc, char** argv) {
                 command_buffer += c;
             }
 
-        } else if (mode == EditorMode::Insert) {
+        } else if (mode == EditorMode::INSERT) {
             if (c == 27) {
-                mode = EditorMode::Normal;
+                mode = EditorMode::NORMAL;
             } else if (c == 127 || c == 8) {
                 buffer.backspace_char();
             } else if (c == '\r') {
@@ -167,8 +82,7 @@ int main(int argc, char** argv) {
                 buffer.insert(c);
             }
 
-        } else {
-            // Normal Mode
+        } else if (mode == EditorMode::NORMAL) {
             if (c == '\x1b') {
                 char seq[2];
                 if (read(STDIN_FILENO, seq, 2) == 2) {
@@ -181,42 +95,22 @@ int main(int argc, char** argv) {
                 }
             } else {
                 switch (c) {
-                    case ':':
-                        command_buffer.clear();
-                        mode = EditorMode::Command;
-                        break;
-                    case 'i':
-                        mode = EditorMode::Insert;
-                        break;
-                    case 'h':
-                        buffer.move_left();
-                        break;
-                    case 'l':
-                        buffer.move_right();
-                        break;
-                    case 's':
-                        buffer.move_start();
-                        break;
-                    case 'e':
-                        buffer.move_end();
-                        break;
-                    case 'j':
-                        buffer.move_down();
-                        break;
-                    case 'k':
-                        buffer.move_up();
-                        break;
+                    case ':': mode = EditorMode::COMMAND; break;
+                    case 'i': mode = EditorMode::INSERT; break;
+                    case 'h': buffer.move_left(); break;
+                    case 'l': buffer.move_right(); break;
+                    case 'j': buffer.move_down(); break;
+                    case 'k': buffer.move_up(); break;
+                    case 's': buffer.move_start(); break;
+                    case 'e': buffer.move_end(); break;
                     case 127:
-                    case 8:
-                        buffer.backspace_char();
-                        break;
-                    default:
-                        break;
+                    case 8: buffer.backspace_char(); break;
+                    default: break; // ignore any isprint() here
                 }
             }
         }
     }
 
-    clear_screen();
+    term_clear_screen();
     return 0;
 }

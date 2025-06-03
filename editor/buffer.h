@@ -34,8 +34,6 @@ public:
     Node* get_cursor() const;
     Node* get_head() const;
 
-    friend std::ostream& operator<<(std::ostream& os, const EditorBuffer& src);
-
 private:
     Node* list_;
     Node* buffer_;

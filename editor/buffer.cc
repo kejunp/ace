@@ -47,7 +47,9 @@ void EditorBuffer::insert(char ch) {
     new_node->prev = cursor;
     new_node->next = cursor->next;
 
-    cursor->next->prev = new_node;
+    if (cursor->next) {
+        cursor->next->prev = new_node;
+    }
     cursor->next = new_node;
 
     cursor = new_node;
@@ -116,33 +118,53 @@ void EditorBuffer::move_down() {
 }
 
 void EditorBuffer::substitute_all(const std::string& pattern, const std::string& replacement) {
+    if (pattern.empty()) return;
+
     Node* p = list_->next;
     while (p != list_) {
-        Node* start = p;
+        Node* match_start = p;
         Node* check = p;
+
         size_t match_len = 0;
         while (check != list_ && match_len < pattern.size() && check->data == pattern[match_len]) {
             ++match_len;
             check = check->next;
         }
+
         if (match_len == pattern.size()) {
+            // Unlink matched nodes
+            Node* before = match_start->prev;
+            Node* after = check;
+
+            Node* to_delete = match_start;
             for (size_t i = 0; i < match_len; ++i) {
-                Node* next = start->next;
-                start->prev->next = start->next;
-                start->next->prev = start->prev;
-                free_node(start);
-                start = next;
+                Node* next = to_delete->next;
+                free_node(to_delete);
+                to_delete = next;
             }
-            Node* prev = p->prev;
-	for (char rc : replacement) {
+
+            before->next = after;
+            after->prev = before;
+
+            // Insert replacement
+            Node* prev = before;
+            for (char rc : replacement) {
                 Node* n = alloc_node(rc);
+                if (!n) {
+                    std::cerr << "Buffer full during substitute.\n";
+                    return;
+                }
+
                 n->prev = prev;
                 n->next = prev->next;
+
                 prev->next->prev = n;
                 prev->next = n;
+
                 prev = n;
             }
-            p = prev->next;
+
+            p = prev->next;  // continue after inserted replacement
         } else {
             p = p->next;
         }

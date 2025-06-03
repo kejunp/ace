@@ -40,12 +40,24 @@ CommandResult run_command(EditorBuffer& buffer, const std::string& input) {
         {"q", [](EditorBuffer&, const std::string&) { return command_q(); }},
         {"w", command_w},
         {"wq", command_wq},
-        {"substitute", [](EditorBuffer& buf, const std::string& patterns) {
-            std::istringstream iss(patterns);
-            std::string pattern;
-            iss >> pattern;
-            std::string replacement;
-            std::getline(iss, replacement);
+        {"substitute", [](EditorBuffer& buf, const std::string& input) {
+            // Expect format: /pattern/replacement/
+            if (input.size() < 3 || input[0] != '/') {
+                std::cerr << "Usage: :substitute /pattern/replacement/\n";
+                return CommandResult::ERROR;
+            }
+
+            size_t second = input.find('/', 1);
+            size_t third  = input.find('/', second + 1);
+
+            if (second == std::string::npos || third == std::string::npos) {
+                std::cerr << "Usage: :substitute /pattern/replacement/\n";
+                return CommandResult::ERROR;
+            }
+
+            std::string pattern     = input.substr(1, second - 1);
+            std::string replacement = input.substr(second + 1, third - second - 1);
+
             return command_substitute(buf, pattern, replacement);
         }}
     };

@@ -52,15 +52,30 @@ void render_buffer(EditorBuffer &buf, int term_rows, int term_cols) {
     clear_screen();
 
     int row = 1, col = 1;
+    int cursor_row = 1, cursor_col = 1;
+
     EditorBuffer::Node* sentinel = buf.get_head();
     EditorBuffer::Node* cursor = buf.get_cursor();
     EditorBuffer::Node* p = sentinel->next;
 
     while (p != sentinel && row <= term_rows - 1) {
         move_cursor(row, col);
-        std::cout << (p->data == '\n' ? ' ' : p->data);
 
-        // Advance cursor position
+        // Print character (don't skip newlines — print visibly or as space)
+        char to_print = (p->data == '\n' ? ' ' : p->data);
+        std::cout << to_print;
+
+        // Save position of cursor
+        if (p == cursor) {
+            cursor_row = row;
+            cursor_col = col + 1;  // place cursor after the character
+            if (cursor_col > term_cols) {
+                cursor_col = 1;
+                cursor_row += 1;
+            }
+        }
+
+        // Advance screen position
         if (p->data == '\n') {
             row++;
             col = 1;
@@ -72,19 +87,13 @@ void render_buffer(EditorBuffer &buf, int term_rows, int term_cols) {
             }
         }
 
-        // If this node is the cursor, draw block after the char
-        if (p == cursor && row <= term_rows - 1) {
-            move_cursor(row, col);
-            std::cout << "\x1b[7m \x1b[0m";  // block cursor
-        }
-
         p = p->next;
     }
 
-    // Special case: cursor is at sentinel (end of buffer)
-    if (cursor == sentinel && row <= term_rows - 1) {
-        move_cursor(row, col);
-        std::cout << "\x1b[7m \x1b[0m";
+    // Special case: cursor is at end (after last node)
+    if (cursor == sentinel) {
+        cursor_row = row;
+        cursor_col = col;
     }
 
     // Status bar
@@ -94,6 +103,9 @@ void render_buffer(EditorBuffer &buf, int term_rows, int term_cols) {
     } else {
         std::cout << "\x1b[44m-- ACE (" << (mode == EditorMode::Insert ? "INSERT" : "NORMAL") << ") --\x1b[0m";
     }
+
+    // Move real terminal cursor to logical buffer position
+    move_cursor(cursor_row, cursor_col);
 
     std::cout.flush();
 }

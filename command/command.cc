@@ -50,13 +50,19 @@ CommandResult run_command(EditorBuffer& buffer, const std::string& input) {
             size_t second = input.find('/', 1);
             size_t third  = input.find('/', second + 1);
 
-            if (second == std::string::npos || third == std::string::npos) {
+            if (second == std::string::npos) {
                 std::cerr << "Usage: :substitute /pattern/replacement/\n";
                 return CommandResult::ERROR;
             }
 
-            std::string pattern     = input.substr(1, second - 1);
-            std::string replacement = input.substr(second + 1, third - second - 1);
+            std::string pattern = input.substr(1, second - 1);
+            std::string replacement;
+
+            if (third != std::string::npos) {
+                replacement = input.substr(second + 1, third - second - 1);
+            } else {
+                replacement = input.substr(second + 1);
+            }
 
             return command_substitute(buf, pattern, replacement);
         }}

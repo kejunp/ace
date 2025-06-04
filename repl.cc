@@ -1,15 +1,6 @@
-#include <iostream>
-#include <unistd.h>
-#include "ui/term.h"
 #include "render.h"
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <csignal>
-#include <cstdlib>
 #include "buffer.h"
 #include "command.h"
-#include <vector>
-#include <string>
 #include <sstream>
 #include <fstream>
 
